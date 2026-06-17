@@ -57,8 +57,14 @@ async def recommend_cafes(
         )
     )
 
+    from api.services.cafe_recommender import _haversine
+
+    in_radius = [
+        cafe for cafe in cafes if _haversine(lat, lng, cafe.latitude, cafe.longitude) <= radius_km
+    ]
+
     scored = sorted(
-        [(cafe, score_cafe(cafe, mode, lat, lng, radius_km)) for cafe in cafes],
+        [(cafe, score_cafe(cafe, mode, lat, lng, radius_km)) for cafe in in_radius],
         key=lambda x: x[1],
         reverse=True,
     )[:5]
@@ -68,6 +74,7 @@ async def recommend_cafes(
 
     def dist_m(cafe: Cafe) -> int:
         from api.services.cafe_recommender import _haversine
+
         return int(_haversine(lat, lng, cafe.latitude, cafe.longitude) * 1000)
 
     return RecommendResponse(

@@ -33,9 +33,6 @@ docker compose up -d
 
 # 백엔드 (프로젝트 루트에서 실행)
 uv sync --project api
-DATABASE_URL="postgresql+asyncpg://focusspot:focusspot@127.0.0.1:5433/focusspot" \
-REDIS_URL="redis://127.0.0.1:6379" \
-JWT_SECRET="dev-secret" \
 PYTHONPATH=. uv run --project api uvicorn api.main:app --reload --port 8000
 
 # 웹 프론트엔드
