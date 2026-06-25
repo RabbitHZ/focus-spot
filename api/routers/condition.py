@@ -16,6 +16,10 @@ class ConditionResponse(BaseModel):
     label: str
     confidence: int
     cafe_hint: str
+    heart_rate: int | None = None
+    sleep_hours: float | None = None
+    spo2: float | None = None
+    step_count: int | None = None
 
 
 class ConditionHistory(BaseModel):
@@ -42,6 +46,10 @@ async def get_current_condition(
         label=CONDITION_LABELS[mode],
         confidence=confidence,
         cafe_hint=CONDITION_CAFE_HINTS[mode],
+        heart_rate=latest.resting_heart_rate,
+        sleep_hours=latest.sleep_duration_hours,
+        spo2=latest.spo2,
+        step_count=latest.step_count,
     )
 
 
