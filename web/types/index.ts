@@ -5,6 +5,10 @@ export interface ConditionResult {
   label: string;
   confidence: number;
   cafe_hint: string;
+  heart_rate: number | null;
+  sleep_hours: number | null;
+  spo2: number | null;
+  step_count: number | null;
 }
 
 export interface CafeCard {
@@ -18,6 +22,8 @@ export interface CafeCard {
   kakao_url: string | null;
   recommendation_reason: string;
   score: number;
+  match_pct: number;
+  tag_source: string;
 }
 
 export interface RecommendResponse {
