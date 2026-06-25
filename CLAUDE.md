@@ -14,6 +14,13 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ---
 
+## 작업 범위 원칙
+
+- **현재 작업 디렉토리만 수정한다.** 사용자가 `web/`에서 작업 중이면 `api/`, `ios/` 등 다른 디렉토리의 파일은 읽거나 수정하지 않는다.
+- 다른 레이어에 변경이 필요한 경우 직접 수정하지 않고 사용자에게 알린다.
+
+---
+
 ## 기술 스택 & 패키지 매니저
 
 | 레이어 | 패키지 매니저 | 주요 도구 |
@@ -81,6 +88,8 @@ docs: 문서
 ```
 
 스코프 예시: `feat(api): add condition analysis endpoint`, `fix(web): cafe card layout`
+
+커밋 메시지는 영어로 작성한다.
 
 커밋 메시지에 `Co-Authored-By: Claude` 등 AI 작성자 표기는 포함하지 않음.
 
