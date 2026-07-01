@@ -8,9 +8,15 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from api.db.database import get_db
 from api.models.cafe import Cafe
 from api.models.health_data import HealthData
+from api.models.user import User
 from api.routers.deps import get_current_user
 from api.services.cafe_recommender import score_cafe
-from api.services.condition import CONDITION_CAFE_HINTS, CONDITION_LABELS, analyze_condition
+from api.services.condition import (
+    CONDITION_CAFE_HINTS,
+    CONDITION_LABELS,
+    ConditionMode,
+    analyze_condition,
+)
 from api.services.kakao import parse_kakao_cafe, search_cafes_nearby
 from api.services.review_scraper import infer_tags_from_reviews
 
@@ -28,8 +34,22 @@ class CafeCard(BaseModel):
     kakao_url: str | None
     recommendation_reason: str
     score: float
-    match_pct: int  # 0–100, 컨디션 매치율 %
-    tag_source: str  # "review" | "ai_infer" | "cached"
+    match_pct: int
+    tag_source: str
+
+
+class CafeDetail(BaseModel):
+    id: int
+    name: str
+    address: str
+    phone: str | None
+    kakao_url: str | None
+    noise_level: str | None
+    lighting: str | None
+    space_type: str | None
+    work_tags: list[str]
+    rating: float | None
+    review_count: int | None
 
 
 class RecommendResponse(BaseModel):
@@ -50,7 +70,9 @@ async def _scrape_tags(kakao_data: dict) -> tuple[dict, str]:
     return tags, source
 
 
-async def _get_or_create_cafe(db: AsyncSession, kakao_data: dict, tags: dict, source: str) -> tuple[Cafe, str]:
+async def _get_or_create_cafe(
+    db: AsyncSession, kakao_data: dict, tags: dict, source: str
+) -> tuple[Cafe, str]:
     """DB 캐시 조회 후 없으면 저장. 이미 스크래핑된 tags를 받아 저장만 담당."""
     kakao_id = kakao_data["kakao_id"]
 
@@ -87,20 +109,25 @@ async def recommend_cafes(
     lat: float = Query(..., description="사용자 위도"),
     lng: float = Query(..., description="사용자 경도"),
     radius_km: float = Query(1.0, description="검색 반경 (km)"),
+    mode: str = Query(None, description="컨디션 모드 (직접 전달 시 DB 조회 생략)"),
     db: AsyncSession = Depends(get_db),
     user_id: int = Depends(get_current_user),
 ):
-    # 1. 사용자 컨디션 분석
-    latest = await db.scalar(
-        select(HealthData)
-        .where(HealthData.user_id == user_id)
-        .order_by(HealthData.recorded_at.desc())
-        .limit(1)
-    )
-    if not latest:
-        raise HTTPException(status_code=404, detail="건강 데이터가 없습니다.")
+    # 1. 컨디션 모드 결정 — 직접 전달되면 DB 조회 생략
+    if mode and mode in [m.value for m in ConditionMode]:
+        from api.services.condition import ConditionMode as CM
 
-    mode, _ = analyze_condition(latest)
+        mode = CM(mode)
+    else:
+        latest = await db.scalar(
+            select(HealthData)
+            .where(HealthData.user_id == user_id)
+            .order_by(HealthData.recorded_at.desc())
+            .limit(1)
+        )
+        if not latest:
+            raise HTTPException(status_code=404, detail="건강 데이터가 없습니다.")
+        mode, _ = analyze_condition(latest)
 
     # 2. 카카오 로컬 API로 반경 내 카페 검색 (가까운 순)
     try:
@@ -139,11 +166,19 @@ async def recommend_cafes(
 
     await db.commit()
 
-    # 4. 컨디션 기반 스코어링 → 상위 10개
+    # 4. 컨디션 기반 스코어링 — noise_level 불일치 카페 제외 후 상위 10개
+    from api.services.cafe_recommender import is_noise_excluded
+
+    compatible = [
+        (cafe, dist, source) for cafe, dist, source in cafes if not is_noise_excluded(cafe, mode)
+    ]
+    if len(compatible) < 3:
+        compatible = cafes
+
     scored = sorted(
         [
             (cafe, dist, source, score_cafe(cafe, mode, lat, lng, radius_km))
-            for cafe, dist, source in cafes
+            for cafe, dist, source in compatible
         ],
         key=lambda x: x[3],
         reverse=True,
@@ -172,22 +207,21 @@ async def recommend_cafes(
     )
 
 
-@router.get("/{cafe_id}", response_model=CafeCard)
+@router.get("/{cafe_id}", response_model=CafeDetail)
 async def get_cafe(cafe_id: int, db: AsyncSession = Depends(get_db)):
     cafe = await db.get(Cafe, cafe_id)
     if not cafe:
         raise HTTPException(status_code=404, detail="카페를 찾을 수 없습니다.")
-    return CafeCard(
+    return CafeDetail(
         id=cafe.id,
         name=cafe.name,
         address=cafe.address,
-        distance_m=0,
+        phone=cafe.phone,
+        kakao_url=cafe.kakao_url,
         noise_level=cafe.noise_level,
         lighting=cafe.lighting,
+        space_type=cafe.space_type,
         work_tags=cafe.work_tags or [],
-        kakao_url=cafe.kakao_url,
-        recommendation_reason="",
-        score=0,
-        match_pct=0,
-        tag_source="cached",
+        rating=cafe.rating,
+        review_count=cafe.review_count,
     )
