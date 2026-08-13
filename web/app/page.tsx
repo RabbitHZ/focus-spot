@@ -782,30 +782,77 @@ function ScrProfile({back,condition,radius,setRadius}:{back:()=>void;condition:C
   );
 }
 
+const SPACE_LABEL: Record<string,string> = {
+  spacious:"넓은 공간", cozy:"아늑한 분위기", "private-booth":"개인 부스", "counter-seat":"카운터석",
+};
+const LIGHTING_LABEL: Record<string,string> = {
+  bright:"밝은 조명", dim:"어두운 무드", "natural-light":"자연 채광",
+};
+
+function PhoneSVG({size=16,color=C.sub}:{size?:number;color?:string}){
+  return <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+    <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07A19.5 19.5 0 0 1 4.69 12 19.79 19.79 0 0 1 1.61 3.41 2 2 0 0 1 3.6 1.24h3a2 2 0 0 1 2 1.72c.127.96.361 1.903.7 2.81a2 2 0 0 1-.45 2.11L7.91 8.91a16 16 0 0 0 6.06 6.06l.52-.52a2 2 0 0 1 2.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0 1 21.28 17z"/>
+  </svg>;
+}
+function StarFilledSVG({size=14,color="#F59E0B"}:{size?:number;color?:string}){
+  return <svg width={size} height={size} viewBox="0 0 24 24" fill={color} stroke="none">
+    <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/>
+  </svg>;
+}
+
 function ScrDetail({cafe,back}:{cafe:CafeCard;back:()=>void}){
+  const [detail, setDetail] = useState<import("@/types").CafeDetail|null>(null);
+
+  useEffect(()=>{
+    api.cafes.get(cafe.id).then(setDetail).catch(()=>null);
+  },[cafe.id]);
+
+  const noiseLevel = detail?.noise_level ?? cafe.noise_level;
+  const workTags   = detail?.work_tags ?? cafe.work_tags;
+  const kakaoUrl   = detail?.kakao_url ?? cafe.kakao_url;
+
   return (
     <div className="fs-screen" style={{height:"100%",display:"flex",flexDirection:"column",background:C.surface,position:"relative"}}>
       <BackBtn onClick={back}/>
+      {/* 헤더 */}
       <div style={{height:210,background:C.grad,position:"relative",overflow:"hidden",flexShrink:0}}>
         <Dots/>
         <div style={{position:"absolute",bottom:18,right:22,opacity:0.9}}>
           <CoffeeSVG size={78} color="rgba(51,39,46,0.55)"/>
         </div>
-        <div className="press" style={{position:"absolute",top:58,right:18,width:40,height:40,borderRadius:13,
-          background:"rgba(255,255,255,0.75)",backdropFilter:"blur(8px)",
-          display:"flex",alignItems:"center",justifyContent:"center",boxShadow:"0 2px 8px rgba(0,0,0,0.08)"}}>
-          <HeartSVG size={18} color={C.rose}/>
-        </div>
       </div>
+
       <div style={{flex:1,overflowY:"auto",padding:"20px 24px 120px"}}>
+        {/* 이름 + 거리 */}
         <div style={{fontSize:25,fontWeight:700,color:C.ink,letterSpacing:-0.6}}>{cafe.name}</div>
-        <div style={{fontSize:14,color:C.sub,marginTop:6,display:"flex",alignItems:"center",gap:8}}>
+        <div style={{fontSize:14,color:C.sub,marginTop:6,display:"flex",alignItems:"center",gap:8,flexWrap:"wrap"}}>
           <span>{cafe.address}</span>
           <span style={{color:C.line}}>|</span>
           <span style={{color:C.greenDeep,fontWeight:600}}>
             {cafe.distance_m<1000?`${cafe.distance_m}m`:`${(cafe.distance_m/1000).toFixed(1)}km`}
           </span>
         </div>
+
+        {/* 평점 + 전화 */}
+        {detail&&(detail.rating||detail.phone)&&(
+          <div style={{display:"flex",alignItems:"center",gap:16,marginTop:12}}>
+            {detail.rating&&(
+              <div style={{display:"flex",alignItems:"center",gap:5}}>
+                <StarFilledSVG size={15}/>
+                <span style={{fontFamily:FM,fontSize:14,fontWeight:700,color:C.ink}}>{detail.rating.toFixed(1)}</span>
+                {detail.review_count&&<span style={{fontSize:12,color:C.faint}}>({detail.review_count.toLocaleString()})</span>}
+              </div>
+            )}
+            {detail.phone&&(
+              <a href={`tel:${detail.phone}`} style={{display:"flex",alignItems:"center",gap:5,textDecoration:"none"}}>
+                <PhoneSVG size={14} color={C.sub}/>
+                <span style={{fontSize:13,color:C.sub}}>{detail.phone}</span>
+              </a>
+            )}
+          </div>
+        )}
+
+        {/* 매치율 카드 */}
         <div style={{background:C.card,border:`1px solid ${C.line}`,borderRadius:18,padding:16,marginTop:18}}>
           <div style={{display:"flex",alignItems:"center",gap:10}}>
             <div style={{width:46,height:46,borderRadius:12,background:C.pinkBg,
@@ -820,21 +867,46 @@ function ScrDetail({cafe,back}:{cafe:CafeCard;back:()=>void}){
             <span style={{fontSize:13,fontWeight:500,color:C.greenDeep,lineHeight:"19px"}}>{cafe.recommendation_reason}</span>
           </div>
         </div>
+
+        {/* 속성 태그 */}
         <div style={{display:"flex",gap:6,marginTop:16,flexWrap:"wrap"}}>
-          {cafe.noise_level&&NL[cafe.noise_level]&&<NoiseBadge nl={NL[cafe.noise_level]} size={12} pad="5px 11px" radius={8}/>}
-          {cafe.work_tags.slice(0,4).map(t=>WL[t]?<WorkBadge key={t} wl={WL[t]} size={12} pad="5px 11px" radius={8}/>:null)}
+          {noiseLevel&&NL[noiseLevel]&&<NoiseBadge nl={NL[noiseLevel]} size={12} pad="5px 11px" radius={8}/>}
+          {workTags.slice(0,4).map(t=>WL[t]?<WorkBadge key={t} wl={WL[t]} size={12} pad="5px 11px" radius={8}/>:null)}
         </div>
+
+        {/* 공간 / 조명 상세 */}
+        {detail&&(detail.space_type||detail.lighting)&&(
+          <div style={{background:C.card,border:`1px solid ${C.line}`,borderRadius:18,padding:"14px 16px",marginTop:14}}>
+            <div style={{fontSize:12,fontWeight:600,color:C.faint,letterSpacing:1.5,textTransform:"uppercase",marginBottom:10}}>공간 정보</div>
+            <div style={{display:"flex",gap:20}}>
+              {detail.space_type&&SPACE_LABEL[detail.space_type]&&(
+                <div style={{display:"flex",flexDirection:"column",gap:3}}>
+                  <span style={{fontSize:11,color:C.faint}}>공간</span>
+                  <span style={{fontSize:14,fontWeight:600,color:C.ink}}>{SPACE_LABEL[detail.space_type]}</span>
+                </div>
+              )}
+              {detail.lighting&&LIGHTING_LABEL[detail.lighting]&&(
+                <div style={{display:"flex",flexDirection:"column",gap:3}}>
+                  <span style={{fontSize:11,color:C.faint}}>조명</span>
+                  <span style={{fontSize:14,fontWeight:600,color:C.ink}}>{LIGHTING_LABEL[detail.lighting]}</span>
+                </div>
+              )}
+            </div>
+          </div>
+        )}
       </div>
+
+      {/* 하단 버튼 */}
       <div style={{position:"absolute",left:0,right:0,bottom:0,padding:"14px 24px 30px",
         background:`linear-gradient(to top,${C.surface} 72%,transparent)`,display:"flex",gap:12}}>
-        {cafe.kakao_url&&(
-          <a href={cafe.kakao_url} target="_blank" rel="noopener noreferrer" className="press"
+        {kakaoUrl&&(
+          <a href={kakaoUrl} target="_blank" rel="noopener noreferrer" className="press"
             style={{width:56,height:56,borderRadius:18,background:C.card,border:`1px solid ${C.line}`,
               display:"flex",alignItems:"center",justifyContent:"center"}}><MapSVG size={22} color={C.ink}/></a>
         )}
         <div style={{flex:1}}>
           <Btn label="길찾기 시작" sub={<NavigateSVG size={16} color="#fff"/>}
-            onClick={()=>cafe.kakao_url&&window.open(cafe.kakao_url,"_blank")}/>
+            onClick={()=>kakaoUrl&&window.open(kakaoUrl,"_blank")}/>
         </div>
       </div>
     </div>

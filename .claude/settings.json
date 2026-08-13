@@ -12,6 +12,25 @@
             "command": "jq -r '.tool_input.file_path' | { read -r f; [[ \"$f\" == */api/*.py ]] && /Users/hwa.j/.local/bin/uvx ruff format \"$f\" 2>/dev/null || true; }",
             "timeout": 30,
             "statusMessage": "ruff formatting..."
+          },
+          {
+            "type": "command",
+            "command": "jq -r '.tool_input.file_path' | { read -r f; [[ \"$f\" == */web/*.ts || \"$f\" == */web/*.tsx ]] && cd /Users/hwa.j/Dev/project/toy/focus-spot/web && pnpm eslint --fix \"$f\" 2>/dev/null || true; }",
+            "timeout": 30,
+            "statusMessage": "eslint fixing..."
+          }
+        ]
+      }
+    ],
+    "PreToolUse": [
+      {
+        "matcher": "Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "cmd=$(jq -r '.tool_input.command'); [[ \"$cmd\" == git\\ commit* ]] && { ROOT=/Users/hwa.j/Dev/project/toy/focus-spot; echo '--- pytest ---'; cd \"$ROOT/api\" && uv run pytest -q 2>&1 | tail -8; echo '--- type-check ---'; cd \"$ROOT/web\" && pnpm type-check 2>&1 | tail -10; } || true",
+            "timeout": 120,
+            "statusMessage": "pre-commit: pytest + type-check..."
           }
         ]
       }

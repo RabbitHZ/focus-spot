@@ -15,8 +15,10 @@ class Settings(BaseSettings):
     anthropic_api_key: str = ""
     google_client_id: str = ""
     google_client_secret: str = ""
+    google_ios_client_id: str = ""
 
     environment: str = "development"
+    cors_origins: list[str] = ["http://localhost:3000"]
 
     model_config = {
         "env_file": str(Path(__file__).parent.parent / ".env"),

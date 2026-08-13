@@ -1,0 +1,86 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<key>CFBundleIdentifier</key>
+	<string>$(PRODUCT_BUNDLE_IDENTIFIER)</string>
+
+	<key>CFBundleName</key>
+	<string>$(PRODUCT_NAME)</string>
+
+	<key>CFBundleDisplayName</key>
+	<string>FocusSpot</string>
+
+	<key>CFBundleVersion</key>
+	<string>1</string>
+
+	<key>CFBundleShortVersionString</key>
+	<string>1.0</string>
+
+	<key>CFBundleExecutable</key>
+	<string>$(EXECUTABLE_NAME)</string>
+
+	<key>CFBundlePackageType</key>
+	<string>APPL</string>
+
+	<key>NSLocationWhenInUseUsageDescription</key>
+	<string>근처 카페를 찾기 위해 현재 위치가 필요합니다.</string>
+
+	<key>NSHealthShareUsageDescription</key>
+	<string>수면, 심박수 등 건강 데이터를 분석해 최적의 카페를 추천합니다.</string>
+
+	<key>NSHealthUpdateUsageDescription</key>
+	<string>건강 데이터를 저장하지 않습니다.</string>
+
+	<key>UIBackgroundModes</key>
+	<array>
+		<string>fetch</string>
+		<string>processing</string>
+	</array>
+
+	<key>BGTaskSchedulerPermittedIdentifiers</key>
+	<array>
+		<string>app.focusspot.health-sync</string>
+	</array>
+
+	<key>GIDClientID</key>
+	<string>567282683951-6nl9bo3dufo6geuisl5i2tiqhch8nn4i.apps.googleusercontent.com</string>
+
+	<key>CFBundleURLTypes</key>
+	<array>
+		<dict>
+			<key>CFBundleURLSchemes</key>
+			<array>
+				<string>com.googleusercontent.apps.567282683951-6nl9bo3dufo6geuisl5i2tiqhch8nn4i</string>
+			</array>
+		</dict>
+	</array>
+
+	<key>UISupportedInterfaceOrientations</key>
+	<array>
+		<string>UIInterfaceOrientationPortrait</string>
+		<string>UIInterfaceOrientationLandscapeLeft</string>
+		<string>UIInterfaceOrientationLandscapeRight</string>
+		<string>UIInterfaceOrientationPortraitUpsideDown</string>
+	</array>
+
+	<key>UILaunchScreen</key>
+	<dict/>
+
+	<key>NSAppTransportSecurity</key>
+	<dict>
+		<key>NSAllowsArbitraryLoads</key>
+		<true/>
+		<key>NSAllowsLocalNetworking</key>
+		<true/>
+	</dict>
+
+	<key>NSLocalNetworkUsageDescription</key>
+	<string>개발 서버에 연결하기 위해 로컬 네트워크 접근이 필요합니다.</string>
+
+	<key>NSBonjourServices</key>
+	<array>
+		<string>_http._tcp</string>
+	</array>
+</dict>
+</plist>

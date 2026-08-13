@@ -26,6 +26,20 @@ export interface CafeCard {
   tag_source: string;
 }
 
+export interface CafeDetail {
+  id: number;
+  name: string;
+  address: string;
+  phone: string | null;
+  kakao_url: string | null;
+  noise_level: string | null;
+  lighting: string | null;
+  space_type: string | null;
+  work_tags: string[];
+  rating: number | null;
+  review_count: number | null;
+}
+
 export interface RecommendResponse {
   mode: ConditionMode;
   mode_label: string;

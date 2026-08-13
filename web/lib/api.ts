@@ -1,4 +1,4 @@
-import type { CafeCard, ConditionResult, RecommendResponse } from "@/types";
+import type { CafeCard, CafeDetail, ConditionResult, RecommendResponse } from "@/types";
 
 const BASE = "/api";
 
@@ -52,6 +52,6 @@ export const api = {
   cafes: {
     recommend: (lat: number, lng: number, radiusKm = 1.0) =>
       request<RecommendResponse>(`/cafes/recommend?lat=${lat}&lng=${lng}&radius_km=${radiusKm}`),
-    get: (id: number) => request<CafeCard>(`/cafes/${id}`),
+    get: (id: number) => request<CafeDetail>(`/cafes/${id}`),
   },
 };

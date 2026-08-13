@@ -10,7 +10,7 @@ class SyncManager: ObservableObject {
     }()
     @Published var syncError: String?
 
-    private let healthKit: HealthKitManager
+    let healthKit: HealthKitManager
 
     init(healthKit: HealthKitManager) {
         self.healthKit = healthKit
@@ -21,7 +21,7 @@ class SyncManager: ObservableObject {
     func sync() async {
         syncError = nil
         do {
-            let snapshot = try await healthKit.fetchSnapshot()
+            let snapshot = await healthKit.fetchSnapshot()
             try await APIClient.shared.syncHealth(snapshot)
             lastSyncedAt = snapshot.recordedAt
             UserDefaults.standard.set(snapshot.recordedAt, forKey: "last_synced_at")
@@ -50,7 +50,7 @@ class SyncManager: ObservableObject {
         let syncTask = Task { @MainActor in
             let hk = HealthKitManager()
             do {
-                let snapshot = try await hk.fetchSnapshot()
+                let snapshot = await hk.fetchSnapshot()
                 try await APIClient.shared.syncHealth(snapshot)
                 UserDefaults.standard.set(snapshot.recordedAt, forKey: "last_synced_at")
                 task.setTaskCompleted(success: true)
