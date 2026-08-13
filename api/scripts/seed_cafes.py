@@ -3,11 +3,9 @@
 import asyncio
 import json
 
-from sqlalchemy import text
-
 from api.db.database import AsyncSessionLocal
 from api.models.cafe import Cafe
-
+from sqlalchemy import text
 
 CAFES = [
     # ── 강남 ──────────────────────────────────────────────────────────────

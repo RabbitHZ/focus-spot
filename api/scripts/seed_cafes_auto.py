@@ -8,13 +8,12 @@ import asyncio
 import sys
 
 import httpx
-from sqlalchemy import select
-
 from api.config import settings
 from api.db.database import AsyncSessionLocal
 from api.models.cafe import Cafe
 from api.services.kakao import parse_kakao_cafe
 from api.services.review_scraper import infer_tags_from_reviews
+from sqlalchemy import select
 
 # 지역 중심좌표 + 검색 반경
 REGIONS = [

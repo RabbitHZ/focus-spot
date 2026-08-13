@@ -1,3 +1,6 @@
+import logging
+from datetime import UTC, datetime
+
 from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel
 from sqlalchemy import select
@@ -20,6 +23,45 @@ class ConditionResponse(BaseModel):
     sleep_hours: float | None = None
     spo2: float | None = None
     step_count: int | None = None
+
+
+class AnalyzeRequest(BaseModel):
+    sleep_duration_hours: float | None = None
+    deep_sleep_hours: float | None = None
+    rem_sleep_hours: float | None = None
+    light_sleep_hours: float | None = None
+    resting_heart_rate: float | None = None
+    avg_heart_rate: float | None = None
+    respiratory_rate: float | None = None
+    spo2: float | None = None
+    step_count: int | None = None
+
+
+@router.post("/analyze", response_model=ConditionResponse)
+async def analyze_condition_direct(
+    body: AnalyzeRequest,
+    user_id: int = Depends(get_current_user),
+):
+    """HealthKit 스냅샷을 직접 받아 DB 저장 없이 바로 컨디션 분석."""
+    logger = logging.getLogger(__name__)
+    logger.debug("[analyze] sleep=%s rHR=%s spo2=%s steps=%s", body.sleep_duration_hours, body.resting_heart_rate, body.spo2, body.step_count)
+    data = HealthData(
+        user_id=user_id,
+        recorded_at=datetime.now(UTC),
+        **body.model_dump(),
+    )
+    mode, confidence = analyze_condition(data)
+    logger.debug("[analyze] result mode=%s confidence=%s", mode, confidence)
+    return ConditionResponse(
+        mode=mode,
+        label=CONDITION_LABELS[mode],
+        confidence=confidence,
+        cafe_hint=CONDITION_CAFE_HINTS[mode],
+        heart_rate=int(body.resting_heart_rate) if body.resting_heart_rate else None,
+        sleep_hours=body.sleep_duration_hours,
+        spo2=body.spo2,
+        step_count=body.step_count,
+    )
 
 
 class ConditionHistory(BaseModel):

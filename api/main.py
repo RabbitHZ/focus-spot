@@ -3,8 +3,9 @@ from contextlib import asynccontextmanager
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
+from api.config import settings
 from api.db.database import init_db
-from api.routers import auth, cafes, condition, health, google_auth
+from api.routers import auth, cafes, condition, google_auth, health, users
 
 
 @asynccontextmanager
@@ -22,7 +23,7 @@ app = FastAPI(
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:3000"],
+    allow_origins=settings.cors_origins,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -33,6 +34,7 @@ app.include_router(google_auth.router, prefix="/api/auth", tags=["auth"])
 app.include_router(health.router, prefix="/api/health", tags=["health"])
 app.include_router(condition.router, prefix="/api/condition", tags=["condition"])
 app.include_router(cafes.router, prefix="/api/cafes", tags=["cafes"])
+app.include_router(users.router, prefix="/api/users", tags=["users"])
 
 
 @app.get("/")

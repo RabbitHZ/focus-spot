@@ -1,7 +1,7 @@
-from datetime import datetime, timedelta, timezone
+from datetime import UTC, datetime, timedelta
 
-from fastapi import APIRouter, Depends, HTTPException, status
 import bcrypt
+from fastapi import APIRouter, Depends, HTTPException, status
 from jose import jwt
 from pydantic import BaseModel, EmailStr
 from sqlalchemy import select
@@ -38,7 +38,7 @@ class TokenResponse(BaseModel):
 
 
 def create_token(user_id: int) -> str:
-    expire = datetime.now(timezone.utc) + timedelta(minutes=settings.jwt_expire_minutes)
+    expire = datetime.now(UTC) + timedelta(minutes=settings.jwt_expire_minutes)
     return jwt.encode(
         {"sub": str(user_id), "exp": expire},
         settings.jwt_secret,

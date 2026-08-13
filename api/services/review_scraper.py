@@ -1,17 +1,15 @@
 """네이버 플레이스 방문자 리뷰 API에서 키워드를 추출해 카페 태그를 반환한다.
 
 흐름:
-  1. 네이버 통합검색(where=place)으로 카페명 검색 → place ID 추출
+  1. pcmap-api GraphQL places 쿼리로 카페명 검색 → place ID 추출 (이름+주소 매칭)
   2. pcmap-api.place.naver.com GraphQL API로 방문자 리뷰 수집 (최대 60개)
   3. 리뷰 텍스트에서 정규식 키워드 카운팅 → 카페 속성 태그 변환
-  4. 태그 추출 실패 시 Claude API fallback (이름/주소 추론)
 """
 
 import re
 
 import httpx
 
-_NAVER_SEARCH_URL = "https://search.naver.com/search.naver"
 _GRAPHQL_URL = "https://pcmap-api.place.naver.com/place/graphql"
 
 _HEADERS_PC = {
@@ -21,6 +19,27 @@ _HEADERS_PC = {
     ),
     "Accept-Language": "ko-KR,ko;q=0.9",
 }
+
+_GRAPHQL_HEADERS = {
+    **_HEADERS_PC,
+    "Accept": "application/json, text/plain, */*",
+    "Content-Type": "application/json",
+    "Origin": "https://pcmap.place.naver.com",
+    "Referer": "https://pcmap.place.naver.com/",
+}
+
+_PLACES_SEARCH_QUERY = """
+query getPlaces($input: PlacesInput) {
+    places(input: $input) {
+        items {
+            id
+            name
+            roadAddress
+        }
+        total
+    }
+}
+"""
 
 _VISITOR_REVIEWS_QUERY = """
 query getVisitorReviews($input: VisitorReviewsInput) {
@@ -78,23 +97,104 @@ _PATTERNS: list[tuple[str, re.Pattern]] = [
 ]
 
 
+def _name_match_score(query_name: str, result_name: str) -> float:
+    """두 카페 이름의 유사도 점수 반환 (0.0 ~ 1.0)."""
+    normalize = lambda s: re.sub(r"[\s카페커피점\-·]", "", s).lower()
+    q = normalize(query_name)
+    r = normalize(result_name)
+    if not q:
+        return 0.0
+    if q == r:
+        return 1.0
+    if q in r or r in q:
+        return 0.8
+    # 핵심 브랜드 단어(앞 2~4자)가 일치하면 부분 매칭
+    core = q[:4]
+    if core and core in r:
+        return 0.5
+    return 0.0
+
+
+def _address_match(query_addr: str, result_addr: str, strict: bool = True) -> bool:
+    """결과 주소가 쿼리 주소와 일치하는지 확인.
+
+    strict=True (이름 부분 일치): 도로명 일치 필요 (번지는 무시)
+    strict=False (이름 완전 일치): 구/동 레벨 또는 도로명 중 하나라도 일치하면 통과
+    """
+    if not query_addr or not result_addr:
+        return True
+    r_norm = result_addr.replace(" ", "")
+
+    # 도로명만 추출 (번지 제외): '강남대로', '아차산로9길', '양화로' 등
+    road_name = re.search(r"[가-힣]+(?:로|길)\d*", query_addr)
+    if road_name:
+        rn = road_name.group(0).replace(" ", "")
+        if rn in r_norm:
+            return True
+
+    # 구/동 레벨 폴백 (strict 여부와 무관하게 시도)
+    parts = query_addr.split()
+    for part in parts[1:4]:  # '서울' 제외하고 구/동/로 순으로 체크
+        if len(part) >= 2 and part in result_addr:
+            return True
+
+    # 이름이 완전 일치(strict=False)이면 같은 시(서울) 내 첫 검색 결과로 허용
+    return not strict
+
+
 async def _find_naver_place_id(name: str, address: str) -> str | None:
-    """카페명+주소로 네이버 장소 검색 → place ID 반환."""
-    addr_hint = " ".join(address.split()[:2]) if address else ""
-    query = f"{name} {addr_hint}".strip()
+    """카페명+주소로 GraphQL places 검색 → place ID 반환.
+
+    이름 유사도와 주소를 함께 검증해 오탐을 방지한다.
+    이름이 완전 일치(score=1.0)하면 주소는 구/동 레벨만 확인한다.
+    """
+    name_short = re.sub(r"점$", "", name)  # '강남역점' → '강남역'
+    # 브랜드명만 추출 (공백 이전 첫 단어)
+    brand = name.split()[0] if " " in name else name
+    queries = [name, name_short, brand]
+
     try:
         async with httpx.AsyncClient(follow_redirects=True, timeout=8.0) as client:
-            r = await client.get(
-                _NAVER_SEARCH_URL,
-                params={"query": query, "where": "place"},
-                headers=_HEADERS_PC,
-            )
-            if r.status_code != 200:
-                return None
-            ids = re.findall(r'"id"\s*:\s*"(\d{7,12})"', r.text)
-            return ids[0] if ids else None
+            for query in dict.fromkeys(queries):  # 중복 제거하면서 순서 유지
+                r = await client.post(
+                    _GRAPHQL_URL,
+                    json={
+                        "operationName": "getPlaces",
+                        "variables": {"input": {"query": query, "display": 10, "start": 1}},
+                        "query": _PLACES_SEARCH_QUERY,
+                    },
+                    headers=_GRAPHQL_HEADERS,
+                )
+                if r.status_code != 200:
+                    continue
+
+                items = r.json().get("data", {}).get("places", {}).get("items", [])
+                if not items:
+                    continue
+
+                # 이름 유사도 + 주소 검증으로 최적 결과 선택
+                best_id: str | None = None
+                best_score = 0.0
+                for item in items:
+                    score = _name_match_score(name, item.get("name", ""))
+                    if score < 0.5:
+                        continue
+                    result_addr = item.get("roadAddress", "")
+                    # 이름이 완전 일치(1.0)이면 주소는 완화 매칭, 부분 일치면 엄격 매칭
+                    addr_ok = _address_match(address, result_addr, strict=(score < 1.0))
+                    if not addr_ok:
+                        continue
+                    if score > best_score:
+                        best_score = score
+                        best_id = item.get("id")
+
+                if best_id:
+                    return best_id
+
     except Exception:
         return None
+
+    return None
 
 
 async def _fetch_visitor_reviews(place_id: str, max_reviews: int = 60) -> list[str]:
@@ -103,10 +203,7 @@ async def _fetch_visitor_reviews(place_id: str, max_reviews: int = 60) -> list[s
     cursor 기반 페이지네이션으로 최대 max_reviews개를 수집한다.
     """
     graphql_headers = {
-        **_HEADERS_PC,
-        "Accept": "application/json, text/plain, */*",
-        "Content-Type": "application/json",
-        "Origin": "https://pcmap.place.naver.com",
+        **_GRAPHQL_HEADERS,
         "Referer": f"https://pcmap.place.naver.com/restaurant/{place_id}/review/visitor",
     }
 

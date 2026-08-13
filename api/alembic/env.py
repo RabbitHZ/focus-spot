@@ -1,16 +1,16 @@
 import asyncio
 from logging.config import fileConfig
 
-from alembic import context
-from sqlalchemy.ext.asyncio import create_async_engine
-
-from api.config import settings
-from api.db.database import Base
+import api.models.cafe  # noqa: F401
+import api.models.health_data  # noqa: F401
 
 # 모든 모델을 import해야 autogenerate가 감지함
 import api.models.user  # noqa: F401
-import api.models.health_data  # noqa: F401
-import api.models.cafe  # noqa: F401
+from api.config import settings
+from api.db.database import Base
+from sqlalchemy.ext.asyncio import create_async_engine
+
+from alembic import context
 
 config = context.config
 if config.config_file_name is not None:
