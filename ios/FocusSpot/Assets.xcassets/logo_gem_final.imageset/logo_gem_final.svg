@@ -1,0 +1,72 @@
+<svg viewBox="0 0 640 640" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="bg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#bcd2be"/>
+      <stop offset="100%" stop-color="#ddc4ca"/>
+    </linearGradient>
+
+    <!-- sage green facet tones, matched to the cube palette -->
+    <linearGradient id="facetLight" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#dff5e3"/>
+      <stop offset="100%" stop-color="#c3e6cf"/>
+    </linearGradient>
+    <linearGradient id="facetMid" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#aedabe"/>
+      <stop offset="100%" stop-color="#9ed4b3"/>
+    </linearGradient>
+    <linearGradient id="facetShade" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#8cc6a3"/>
+      <stop offset="100%" stop-color="#76b690"/>
+    </linearGradient>
+    <linearGradient id="facetPink" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#ffd6e2"/>
+      <stop offset="100%" stop-color="#f5a9c0"/>
+    </linearGradient>
+
+    <radialGradient id="gloss" cx="35%" cy="20%" r="55%">
+      <stop offset="0%" stop-color="#ffffff" stop-opacity="0.8"/>
+      <stop offset="100%" stop-color="#ffffff" stop-opacity="0"/>
+    </radialGradient>
+    <radialGradient id="glossSoft" cx="40%" cy="28%" r="50%">
+      <stop offset="0%" stop-color="#ffffff" stop-opacity="0.5"/>
+      <stop offset="100%" stop-color="#ffffff" stop-opacity="0"/>
+    </radialGradient>
+    <linearGradient id="glassFilm" x1="15%" y1="0%" x2="80%" y2="100%">
+      <stop offset="0%" stop-color="#ffffff" stop-opacity="0.5"/>
+      <stop offset="45%" stop-color="#ffffff" stop-opacity="0.08"/>
+      <stop offset="70%" stop-color="#ffffff" stop-opacity="0"/>
+      <stop offset="100%" stop-color="#ffffff" stop-opacity="0.16"/>
+    </linearGradient>
+
+    <filter id="shadow" x="-30%" y="-30%" width="160%" height="160%">
+      <feDropShadow dx="0" dy="14" stdDeviation="12" flood-color="#3d6b39" flood-opacity="0.22"/>
+    </filter>
+    <filter id="groundShadow" x="-80%" y="-80%" width="260%" height="260%">
+      <feGaussianBlur stdDeviation="13"/>
+    </filter>
+  </defs>
+
+  <rect x="40" y="40" width="560" height="560" rx="120" fill="url(#bg)"/>
+  <ellipse cx="320" cy="494" rx="106" ry="20" fill="#3d6b39" opacity="0.2" filter="url(#groundShadow)"/>
+
+  <!-- faceted hexagonal gem, scaled 2x from original 320 design -->
+  <g filter="url(#shadow)">
+    <polygon points="320,330 320,174 455,252" fill="url(#facetLight)"/>
+    <polygon points="320,330 455,252 455,408" fill="url(#facetPink)"/>
+    <polygon points="320,330 455,408 320,486" fill="url(#facetMid)"/>
+    <polygon points="320,330 320,486 185,408" fill="url(#facetShade)"/>
+    <polygon points="320,330 185,408 185,252" fill="url(#facetMid)"/>
+    <polygon points="320,330 185,252 320,174" fill="url(#facetLight)"/>
+
+    <!-- glassmorphism film sweeping across the whole gem -->
+    <polygon points="320,174 455,252 455,408 320,486 185,408 185,252" fill="url(#glassFilm)" opacity="0.6"/>
+
+    <!-- glossy specular highlights -->
+    <polygon points="320,330 320,174 455,252" fill="url(#gloss)"/>
+    <polygon points="320,330 185,252 320,174" fill="url(#glossSoft)"/>
+
+    <!-- sparkle accents, like light catching glass edges -->
+    <ellipse cx="300" cy="225" rx="14" ry="9" fill="#ffffff" opacity="0.9" transform="rotate(-20 300 225)"/>
+    <circle cx="400" cy="290" r="5" fill="#ffffff" opacity="0.8"/>
+  </g>
+</svg>

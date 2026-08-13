@@ -1,7 +1,16 @@
 import Foundation
 
 actor APIClient {
-    static let shared = APIClient(baseURL: "http://localhost:8000")
+    static let shared: APIClient = {
+        if let url = ProcessInfo.processInfo.environment["API_BASE_URL"] {
+            return APIClient(baseURL: url)
+        }
+        #if DEBUG
+        return APIClient(baseURL: "http://192.168.219.102:8000")
+        #else
+        return APIClient(baseURL: "https://api.focusspot.app")
+        #endif
+    }()
 
     private let baseURL: URL
     private let session: URLSession
@@ -21,7 +30,10 @@ actor APIClient {
 
     init(baseURL: String) {
         self.baseURL = URL(string: baseURL)!
-        self.session = URLSession.shared
+        let config = URLSessionConfiguration.default
+        config.timeoutIntervalForRequest = 15
+        config.timeoutIntervalForResource = 30
+        self.session = URLSession(configuration: config)
         self.token = UserDefaults.standard.string(forKey: "focusspot_token")
     }
 
@@ -48,6 +60,45 @@ actor APIClient {
         try await postVoid("/api/health/sync", body: snapshot)
     }
 
+    // MARK: - Condition
+
+    func currentCondition() async throws -> ConditionResult {
+        try await get("/api/condition/current")
+    }
+
+    func analyzeCondition(_ snapshot: HealthSnapshot) async throws -> ConditionResult {
+        try await post("/api/condition/analyze", body: snapshot)
+    }
+
+    // MARK: - Cafes
+
+    func getCafeDetail(id: Int) async throws -> CafeDetail {
+        try await get("/api/cafes/\(id)")
+    }
+
+    func recommendCafes(lat: Double, lng: Double, radiusKm: Double, mode: String? = nil) async throws -> RecommendResponse {
+        var path = "/api/cafes/recommend?lat=\(lat)&lng=\(lng)&radius_km=\(radiusKm)"
+        if let mode { path += "&mode=\(mode)" }
+        return try await get(path)
+    }
+
+    // MARK: - User preferences
+
+    func updateRadius(radiusKm: Double) async throws {
+        struct Body: Encodable { let radius_km: Double }
+        struct Prefs: Decodable { let radius_km: Double }
+        let _: Prefs = try await patch("/api/users/me/preferences", body: Body(radius_km: radiusKm))
+    }
+
+    private func get<R: Decodable>(_ path: String) async throws -> R {
+        var req = URLRequest(url: URL(string: baseURL.absoluteString + path)!)
+        req.httpMethod = "GET"
+        if let token { req.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization") }
+        let (data, response) = try await session.data(for: req)
+        try validateResponse(response, data: data)
+        return try decoder.decode(R.self, from: data)
+    }
+
     // MARK: - HTTP helpers
 
     private func post<B: Encodable, R: Decodable>(_ path: String, body: B, requiresAuth: Bool = true) async throws -> R {
@@ -61,6 +112,13 @@ actor APIClient {
         let req = try buildRequest(path: path, method: "POST", body: body, requiresAuth: true)
         let (data, response) = try await session.data(for: req)
         try validateResponse(response, data: data)
+    }
+
+    private func patch<B: Encodable, R: Decodable>(_ path: String, body: B) async throws -> R {
+        let req = try buildRequest(path: path, method: "PATCH", body: body, requiresAuth: true)
+        let (data, response) = try await session.data(for: req)
+        try validateResponse(response, data: data)
+        return try decoder.decode(R.self, from: data)
     }
 
     private func buildRequest<B: Encodable>(path: String, method: String, body: B, requiresAuth: Bool) throws -> URLRequest {
@@ -92,5 +150,22 @@ enum APIError: LocalizedError {
         case .serverError(let code, let msg):
             return "서버 오류 (\(code)): \(msg)"
         }
+    }
+}
+
+struct TimeoutError: LocalizedError {
+    var errorDescription: String? { "요청 시간이 초과됐어요." }
+}
+
+func withTimeout<T: Sendable>(seconds: Double, operation: @escaping @Sendable () async throws -> T) async throws -> T {
+    try await withThrowingTaskGroup(of: T.self) { group in
+        group.addTask { try await operation() }
+        group.addTask {
+            try await Task.sleep(nanoseconds: UInt64(seconds * 1_000_000_000))
+            throw TimeoutError()
+        }
+        let result = try await group.next()!
+        group.cancelAll()
+        return result
     }
 }
