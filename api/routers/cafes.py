@@ -6,6 +6,7 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from api.db.database import get_db
+from api.db.redis import get_cached_preferences
 from api.models.cafe import Cafe
 from api.models.health_data import HealthData
 from api.models.user import User
@@ -108,11 +109,23 @@ def _score_to_match_pct(score: float) -> int:
 async def recommend_cafes(
     lat: float = Query(..., description="사용자 위도"),
     lng: float = Query(..., description="사용자 경도"),
-    radius_km: float = Query(1.0, description="검색 반경 (km)"),
+    radius_km: float | None = Query(
+        None, description="검색 반경 (km), 미지정 시 사용자 설정값 사용"
+    ),
     mode: str = Query(None, description="컨디션 모드 (직접 전달 시 DB 조회 생략)"),
+    limit: int = Query(10, ge=1, le=45, description="반환할 추천 카페 최대 개수"),
     db: AsyncSession = Depends(get_db),
     user_id: int = Depends(get_current_user),
 ):
+    # 0. 반경 결정 — 쿼리 파라미터 우선, 없으면 사용자 저장 선호값 (캐시 → DB) 폴백
+    if radius_km is None:
+        cached = await get_cached_preferences(user_id)
+        if cached:
+            radius_km = cached["radius_km"]
+        else:
+            user = await db.get(User, user_id)
+            radius_km = (user.radius_km if user else None) or 1.0
+
     # 1. 컨디션 모드 결정 — 직접 전달되면 DB 조회 생략
     if mode and mode in [m.value for m in ConditionMode]:
         from api.services.condition import ConditionMode as CM
@@ -182,7 +195,7 @@ async def recommend_cafes(
         ],
         key=lambda x: x[3],
         reverse=True,
-    )[:10]
+    )[:limit]
 
     return RecommendResponse(
         mode=mode,

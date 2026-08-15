@@ -34,7 +34,7 @@
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedBuildFileExceptionSet section */
-		DAE0058F2FE6E866004E9066 /* Exceptions for "FocusSpot" folder in "FocusSpot" target */ = {
+		DA39316B302E331E00E8CE90 /* Exceptions for "FocusSpot" folder in "FocusSpot" target */ = {
 			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
 			membershipExceptions = (
 				Info.plist,
@@ -47,7 +47,7 @@
 		DA3CDAE12FE52F43002A80B3 /* FocusSpot */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
 			exceptions = (
-				DAE0058F2FE6E866004E9066 /* Exceptions for "FocusSpot" folder in "FocusSpot" target */,
+				DA39316B302E331E00E8CE90 /* Exceptions for "FocusSpot" folder in "FocusSpot" target */,
 			);
 			path = FocusSpot;
 			sourceTree = "<group>";
