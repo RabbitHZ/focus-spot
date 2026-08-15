@@ -11,7 +11,7 @@ async def search_cafes_nearby(
     lat: float,
     lng: float,
     radius_m: int = 1000,
-    max_results: int = 20,
+    max_results: int = 45,
 ) -> list[dict]:
     """
     카카오 로컬 카테고리 검색으로 반경 내 카페 목록을 가져온다.
