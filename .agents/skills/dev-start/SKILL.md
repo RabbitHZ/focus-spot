@@ -22,16 +22,8 @@ disable-model-invocation: false
 4. **웹 의존성 동기화**
    - `cd web && pnpm install` 실행 (lock 파일 변경 없이)
 
-5. **서버 실행 (백그라운드)**
-   - 포트 8000, 3000이 이미 사용 중이면 해당 프로세스를 종료한다:
-     - `lsof -ti:8000 | xargs kill -9 2>/dev/null || true`
-     - `lsof -ti:3000 | xargs kill -9 2>/dev/null || true`
-   - API 서버를 백그라운드로 실행하고 로그를 `/tmp/focusspot-api.log`에 저장한다:
-     - 프로젝트 루트에서: `uv run --project api python -m uvicorn api.main:app --reload --host 0.0.0.0 --port 8000 > /tmp/focusspot-api.log 2>&1 &`
-   - 웹 서버를 백그라운드로 실행하고 로그를 `/tmp/focusspot-web.log`에 저장한다:
-     - `web/` 디렉토리에서: `pnpm dev > /tmp/focusspot-web.log 2>&1 &`
-   - 두 서버가 정상 기동될 때까지 기다린다:
-     - API: `curl -s http://localhost:8000/health` 또는 `curl -s http://localhost:8000/docs`가 응답할 때까지
-     - 웹: `curl -s http://localhost:3000`이 응답할 때까지
-   - 기동 완료 후 PID와 로그 파일 경로를 사용자에게 알린다
+5. **실행 안내**
+   - API 서버: `cd api && uv run uvicorn main:app --reload` (포트 8000)
+   - 웹 서버: `cd web && pnpm dev` (포트 3000)
+   - 두 명령어를 별도 터미널에서 실행해야 함을 안내한다
    - `.env` 파일이 없으면 `.env.example`을 복사하라고 안내한다
