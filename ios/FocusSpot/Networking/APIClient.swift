@@ -6,7 +6,7 @@ actor APIClient {
             return APIClient(baseURL: url)
         }
         #if DEBUG
-        return APIClient(baseURL: "http://192.168.219.102:8000")
+        return APIClient(baseURL: "https://improper-sleeve-neatly.ngrok-free.dev")
         #else
         return APIClient(baseURL: "https://api.focusspot.app")
         #endif
@@ -76,8 +76,8 @@ actor APIClient {
         try await get("/api/cafes/\(id)")
     }
 
-    func recommendCafes(lat: Double, lng: Double, radiusKm: Double, mode: String? = nil) async throws -> RecommendResponse {
-        var path = "/api/cafes/recommend?lat=\(lat)&lng=\(lng)&radius_km=\(radiusKm)"
+    func recommendCafes(lat: Double, lng: Double, radiusKm: Double, mode: String? = nil, limit: Int = 20) async throws -> RecommendResponse {
+        var path = "/api/cafes/recommend?lat=\(lat)&lng=\(lng)&radius_km=\(radiusKm)&limit=\(limit)"
         if let mode { path += "&mode=\(mode)" }
         return try await get(path)
     }

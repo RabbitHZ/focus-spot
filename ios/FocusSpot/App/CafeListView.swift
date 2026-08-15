@@ -37,6 +37,9 @@ struct CafeListView: View {
     let onRemeasure: () -> Void
     @EnvironmentObject private var auth: AuthManager
 
+    private let pageSize = 5
+    @State private var visibleCount = 5
+
     private var modeLabel: String {
         switch condition?.mode {
         case "focus":     return "집중"
@@ -134,9 +137,31 @@ struct CafeListView: View {
             } else {
                 ScrollView {
                     VStack(spacing: 13) {
-                        ForEach(Array(cafes.enumerated()), id: \.element.id) { i, cafe in
+                        ForEach(Array(cafes.prefix(visibleCount).enumerated()), id: \.element.id) { i, cafe in
                             CafeCardRow(cafe: cafe, isBest: i == 0)
                                 .onTapGesture { onSelect(cafe) }
+                        }
+
+                        if visibleCount < cafes.count {
+                            Button {
+                                withAnimation(.easeInOut(duration: 0.25)) {
+                                    visibleCount = min(visibleCount + pageSize, cafes.count)
+                                }
+                            } label: {
+                                HStack(spacing: 6) {
+                                    Text("더 보기")
+                                        .font(.system(size: 14, weight: .semibold))
+                                    Image(systemName: "ellipsis")
+                                        .font(.system(size: 14, weight: .semibold))
+                                }
+                                .foregroundColor(C.sub)
+                                .frame(maxWidth: .infinity)
+                                .frame(height: 48)
+                                .background(C.card)
+                                .cornerRadius(14)
+                                .overlay(RoundedRectangle(cornerRadius: 14).stroke(C.line, lineWidth: 1))
+                            }
+                            .padding(.top, 3)
                         }
                     }
                     .padding(.horizontal, 20)

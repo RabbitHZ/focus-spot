@@ -31,20 +31,6 @@ struct LoginView: View {
                         .foregroundColor(C.sub)
                         .multilineTextAlignment(.center)
                         .lineSpacing(3)
-                        .padding(.bottom, 22)
-
-                    HStack(spacing: 8) {
-                        Image(systemName: "lock.shield.fill")
-                            .font(.system(size: 12))
-                            .foregroundColor(C.greenDeep)
-                        Text("FocusSpot은 비밀번호를 저장하지 않아요")
-                            .font(.system(size: 12.5, weight: .medium))
-                            .foregroundColor(C.greenDeep)
-                    }
-                    .padding(.horizontal, 14)
-                    .padding(.vertical, 8)
-                    .background(C.lavender)
-                    .cornerRadius(99)
                 }
 
                 Spacer()
@@ -79,9 +65,15 @@ struct LoginView: View {
                     }
                     .disabled(isLoading)
 
-                    Text("다른 로그인 방법은 제공하지 않아요")
-                        .font(.system(size: 12.5))
-                        .foregroundColor(C.faint)
+                    HStack(spacing: 6) {
+                        Link("개인정보처리방침", destination: URL(string: "https://focusspot-web.vercel.app/privacy")!)
+                        Text("·")
+                            .foregroundColor(C.faint)
+                        Link("서비스 이용약관", destination: URL(string: "https://focusspot-web.vercel.app/terms")!)
+                    }
+                    .font(.system(size: 12.5, weight: .medium))
+                    .tint(C.sub)
+                    .padding(.top, 2)
                 }
                 .padding(.horizontal, 24)
                 .padding(.bottom, 44)

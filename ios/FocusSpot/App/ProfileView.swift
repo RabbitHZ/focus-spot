@@ -215,9 +215,9 @@ struct ProfileView: View {
                     // MARK: 약관
                     sectionBlock("약관 및 정책") {
                         VStack(spacing: 0) {
-                            legalRow(icon: "doc.text.fill", label: "개인정보처리방침", url: "https://focusspot.vercel.app/privacy")
+                            legalRow(icon: "doc.text.fill", label: "개인정보처리방침", url: "https://focusspot-web.vercel.app/privacy")
                             Divider().padding(.horizontal, 20)
-                            legalRow(icon: "doc.fill", label: "서비스 이용약관", url: "https://focusspot.vercel.app/terms")
+                            legalRow(icon: "doc.fill", label: "서비스 이용약관", url: "https://focusspot-web.vercel.app/terms")
                         }
                         .background(C.card)
                         .cornerRadius(18)
